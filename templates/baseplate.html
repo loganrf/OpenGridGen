@@ -15,9 +15,11 @@
         <option value="stl">STL</option>
     </select>
 
-    <button type="submit">Download</button>
-    <button type="button" onclick="calculateBoundingBox()">View Dimensions</button>
+    <button type="button" onclick="downloadBaseplate()">Download</button>
+    <button type="button" onclick="updatePreview()">Preview & Dimensions</button>
 </form>
+
+<div id="preview-container" class="result-box" style="display:none; height: 400px;"></div>
 
 <div id="dimensions" class="result-box" style="display:none;">
     <h3>Bounding Box Dimensions (mm)</h3>
@@ -27,27 +29,48 @@
 </div>
 
 <script>
-    async function calculateBoundingBox() {
+    async function updatePreview() {
         const width = document.getElementById('width').value;
         const length = document.getElementById('length').value;
 
-        const response = await fetch('/api/generate_baseplate_info', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ width, length })
-        });
+        showLoading();
+        try {
+            const response = await fetch('/api/preview_baseplate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ width, length })
+            });
+            if (!response.ok) throw new Error('Preview generation failed');
 
-        const result = await response.json();
-        if (result.success) {
-            document.getElementById('dim-x').innerText = result.dimensions.x.toFixed(2);
-            document.getElementById('dim-y').innerText = result.dimensions.y.toFixed(2);
-            document.getElementById('dim-z').innerText = result.dimensions.z.toFixed(2);
-            document.getElementById('dimensions').style.display = 'block';
-        } else {
-            alert('Error calculating dimensions: ' + result.error);
+            // Extract dimensions from headers
+            const dimsJson = response.headers.get('X-Dimensions');
+            if (dimsJson) {
+                const dims = JSON.parse(dimsJson);
+                document.getElementById('dim-x').innerText = dims.x.toFixed(2);
+                document.getElementById('dim-y').innerText = dims.y.toFixed(2);
+                document.getElementById('dim-z').innerText = dims.z.toFixed(2);
+                document.getElementById('dimensions').style.display = 'block';
+            }
+
+            const blob = await response.blob();
+            initViewer('preview-container', blob);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            hideLoading();
         }
+    }
+
+    function downloadBaseplate() {
+        const form = document.getElementById('baseplateForm');
+        const formData = new FormData(form);
+        const width = document.getElementById('width').value;
+        const length = document.getElementById('length').value;
+        const format = document.getElementById('format').value;
+        const filename = `baseplate_${width}x${length}.${format}`;
+
+        downloadWithProgress('/api/download_baseplate', formData, filename);
     }
 </script>
 {% endblock %}

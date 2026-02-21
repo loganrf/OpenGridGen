@@ -8,6 +8,7 @@ import cadquery as cq
 import os
 import tempfile
 import json
+import uuid
 
 app = Flask(__name__)
 
@@ -88,6 +89,31 @@ def generate_box_info():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+@app.route('/api/preview_box', methods=['POST'])
+def preview_box():
+    update_constants()
+    try:
+        data = request.json
+        width = int(data.get('width', 1))
+        length = int(data.get('length', 1))
+        height = int(data.get('height', 1))
+
+        box = cqgridfinity.GridfinityBox(length, width, height)
+
+        # Get dimensions
+        bb = box.cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        filename = f"preview_box_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        box.save_stl_file(filepath)
+
+        response = send_file(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/api/download_box', methods=['POST'])
 def download_box():
     update_constants()
@@ -131,6 +157,30 @@ def generate_baseplate_info():
         }
 
         return jsonify({"success": True, "dimensions": dims})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/preview_baseplate', methods=['POST'])
+def preview_baseplate():
+    update_constants()
+    try:
+        data = request.json
+        width = int(data.get('width', 1))
+        length = int(data.get('length', 1))
+
+        bp = cqgridfinity.GridfinityBaseplate(length, width)
+
+        # Get dimensions
+        bb = bp.cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        filename = f"preview_baseplate_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        bp.save_stl_file(filepath)
+
+        response = send_file(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
