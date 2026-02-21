@@ -96,6 +96,37 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                display: none;
+                box-sizing: border-box;
+            }
+            .sidebar.active {
+                display: flex;
+            }
+            .content {
+                width: 100%;
+                padding: 20px;
+            }
+            .menu-toggle {
+                display: block !important;
+                background: #333;
+                color: #fff;
+                padding: 10px;
+                cursor: pointer;
+                text-align: center;
+                font-size: 1.2em;
+            }
+        }
+        .menu-toggle {
+            display: none;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
@@ -107,7 +138,12 @@
         <div class="spinner"></div>
         <div>Generating... Please wait.</div>
     </div>
-    <div class="sidebar">
+
+    <div class="menu-toggle" onclick="toggleMenu()">
+        ☰ Menu
+    </div>
+
+    <div class="sidebar" id="sidebar">
         <h1>OpenGridGen</h1>
         <a href="/">Home</a>
         <a href="/box">Box Generator</a>
@@ -120,6 +156,10 @@
         {% block content %}{% endblock %}
     </div>
     <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
         function showLoading() {
             document.getElementById('loading-overlay').style.display = 'flex';
         }

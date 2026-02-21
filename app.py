@@ -87,6 +87,20 @@ def update_constants():
             if hasattr(mod, key):
                 setattr(mod, key, getattr(cqgridfinity.constants, key))
 
+class CustomGridfinityBaseplate(cqgridfinity.GridfinityBaseplate):
+    def __init__(self, length_u, width_u, length_padding=0, width_padding=0, **kwargs):
+        self.length_padding = length_padding
+        self.width_padding = width_padding
+        super().__init__(length_u, width_u, **kwargs)
+
+    @property
+    def length(self):
+        return self.length_u * cqgridfinity.constants.GRU + self.length_padding
+
+    @property
+    def width(self):
+        return self.width_u * cqgridfinity.constants.GRU + self.width_padding
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -116,8 +130,9 @@ def generate_box_info():
         width = int(data.get('width', 1))
         length = int(data.get('length', 1))
         height = int(data.get('height', 1))
+        solid = data.get('solid', False)
 
-        box = cqgridfinity.GridfinityBox(length, width, height)
+        box = cqgridfinity.GridfinityBox(length, width, height, solid=solid)
 
         # Calculate bounding box
         # cqgridfinity objects have .cq_obj which is a CadQuery Workplane object
@@ -143,8 +158,9 @@ def preview_box():
         width = int(data.get('width', 1))
         length = int(data.get('length', 1))
         height = int(data.get('height', 1))
+        solid = data.get('solid', False)
 
-        box = cqgridfinity.GridfinityBox(length, width, height)
+        box = cqgridfinity.GridfinityBox(length, width, height, solid=solid)
 
         # Get dimensions
         bb = box.cq_obj.val().BoundingBox()
@@ -168,8 +184,9 @@ def download_box():
         length = int(request.form.get('length', 1))
         height = int(request.form.get('height', 1))
         format_type = request.form.get('format', 'step').lower()
+        solid = request.form.get('solid') == 'true'
 
-        box = cqgridfinity.GridfinityBox(length, width, height)
+        box = cqgridfinity.GridfinityBox(length, width, height, solid=solid)
 
         filename = f"box_{width}x{length}x{height}.{format_type}"
         filepath = os.path.join(tempfile.gettempdir(), filename)
@@ -192,8 +209,20 @@ def generate_baseplate_info():
         data = request.json
         width = int(data.get('width', 1))
         length = int(data.get('length', 1))
+        padding_width = float(data.get('padding_width', 0))
+        padding_length = float(data.get('padding_length', 0))
+        corner_screws = data.get('corner_screws', False)
 
-        bp = cqgridfinity.GridfinityBaseplate(length, width)
+        kwargs = {}
+        if corner_screws:
+            kwargs['corner_screws'] = True
+            kwargs['csk_hole'] = 3.6
+            kwargs['csk_diam'] = 7.0
+
+        bp = CustomGridfinityBaseplate(length, width,
+                                     length_padding=padding_length,
+                                     width_padding=padding_width,
+                                     **kwargs)
 
         bb = bp.cq_obj.val().BoundingBox()
         dims = {
@@ -213,8 +242,20 @@ def preview_baseplate():
         data = request.json
         width = int(data.get('width', 1))
         length = int(data.get('length', 1))
+        padding_width = float(data.get('padding_width', 0))
+        padding_length = float(data.get('padding_length', 0))
+        corner_screws = data.get('corner_screws', False)
 
-        bp = cqgridfinity.GridfinityBaseplate(length, width)
+        kwargs = {}
+        if corner_screws:
+            kwargs['corner_screws'] = True
+            kwargs['csk_hole'] = 3.6
+            kwargs['csk_diam'] = 7.0
+
+        bp = CustomGridfinityBaseplate(length, width,
+                                     length_padding=padding_length,
+                                     width_padding=padding_width,
+                                     **kwargs)
 
         # Get dimensions
         bb = bp.cq_obj.val().BoundingBox()
@@ -237,8 +278,20 @@ def download_baseplate():
         width = int(request.form.get('width', 1))
         length = int(request.form.get('length', 1))
         format_type = request.form.get('format', 'step').lower()
+        padding_width = float(request.form.get('padding_width', 0))
+        padding_length = float(request.form.get('padding_length', 0))
+        corner_screws = request.form.get('corner_screws') == 'true'
 
-        bp = cqgridfinity.GridfinityBaseplate(length, width)
+        kwargs = {}
+        if corner_screws:
+            kwargs['corner_screws'] = True
+            kwargs['csk_hole'] = 3.6
+            kwargs['csk_diam'] = 7.0
+
+        bp = CustomGridfinityBaseplate(length, width,
+                                     length_padding=padding_length,
+                                     width_padding=padding_width,
+                                     **kwargs)
 
         filename = f"baseplate_{width}x{length}.{format_type}"
         filepath = os.path.join(tempfile.gettempdir(), filename)

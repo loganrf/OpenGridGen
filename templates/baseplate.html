@@ -9,6 +9,17 @@
     <label for="length">Length (Grid Units):</label>
     <input type="number" id="length" name="length" value="1" min="1" required>
 
+    <label for="padding_width">Padding Width (mm):</label>
+    <input type="number" id="padding_width" name="padding_width" value="0" min="0" step="0.1">
+
+    <label for="padding_length">Padding Length (mm):</label>
+    <input type="number" id="padding_length" name="padding_length" value="0" min="0" step="0.1">
+
+    <div style="margin-bottom: 20px;">
+        <input type="checkbox" id="corner_screws" name="corner_screws" value="true" style="width: auto;">
+        <label for="corner_screws" style="display: inline;">Corner Screw Holes (M3)</label>
+    </div>
+
     <label for="format">Format:</label>
     <select id="format" name="format">
         <option value="step">STEP</option>
@@ -32,13 +43,16 @@
     async function updatePreview() {
         const width = document.getElementById('width').value;
         const length = document.getElementById('length').value;
+        const padding_width = document.getElementById('padding_width').value;
+        const padding_length = document.getElementById('padding_length').value;
+        const corner_screws = document.getElementById('corner_screws').checked;
 
         showLoading();
         try {
             const response = await fetch('/api/preview_baseplate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ width, length })
+                body: JSON.stringify({ width, length, padding_width, padding_length, corner_screws })
             });
             if (!response.ok) throw new Error('Preview generation failed');
 
@@ -67,8 +81,15 @@
         const formData = new FormData(form);
         const width = document.getElementById('width').value;
         const length = document.getElementById('length').value;
+        const padding_width = document.getElementById('padding_width').value;
+        const padding_length = document.getElementById('padding_length').value;
+        const corner_screws = document.getElementById('corner_screws').checked;
         const format = document.getElementById('format').value;
-        const filename = `baseplate_${width}x${length}.${format}`;
+
+        let filename = `baseplate_${width}x${length}`;
+        if (padding_width > 0 || padding_length > 0) filename += `_p${padding_width}x${padding_length}`;
+        if (corner_screws) filename += '_screws';
+        filename += `.${format}`;
 
         downloadWithProgress('/api/download_baseplate', formData, filename);
     }
