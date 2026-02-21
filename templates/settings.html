@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Settings</h2>
+{% if message %}
+<div style="background-color: #d4edda; color: #155724; padding: 10px; margin-bottom: 20px;">
+    {{ message }}
+</div>
+{% endif %}
+<form method="POST">
+    <label for="GRU">Grid Unit Size (mm) [Default: 42.0]:</label>
+    <input type="number" step="0.1" id="GRU" name="GRU" value="{{ settings.GRU }}" required>
+
+    <label for="GRHU">Height Unit Size (mm) [Default: 7.0]:</label>
+    <input type="number" step="0.1" id="GRHU" name="GRHU" value="{{ settings.GRHU }}" required>
+
+    <button type="submit">Save Settings</button>
+</form>
+{% endblock %}

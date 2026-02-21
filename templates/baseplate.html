@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Baseplate Generator</h2>
+<form id="baseplateForm" action="/api/download_baseplate" method="POST">
+    <label for="width">Width (Grid Units):</label>
+    <input type="number" id="width" name="width" value="1" min="1" required>
+
+    <label for="length">Length (Grid Units):</label>
+    <input type="number" id="length" name="length" value="1" min="1" required>
+
+    <label for="format">Format:</label>
+    <select id="format" name="format">
+        <option value="step">STEP</option>
+        <option value="stl">STL</option>
+    </select>
+
+    <button type="submit">Download</button>
+    <button type="button" onclick="calculateBoundingBox()">View Dimensions</button>
+</form>
+
+<div id="dimensions" class="result-box" style="display:none;">
+    <h3>Bounding Box Dimensions (mm)</h3>
+    <p>X: <span id="dim-x"></span></p>
+    <p>Y: <span id="dim-y"></span></p>
+    <p>Z: <span id="dim-z"></span></p>
+</div>
+
+<script>
+    async function calculateBoundingBox() {
+        const width = document.getElementById('width').value;
+        const length = document.getElementById('length').value;
+
+        const response = await fetch('/api/generate_baseplate_info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ width, length })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('dim-x').innerText = result.dimensions.x.toFixed(2);
+            document.getElementById('dim-y').innerText = result.dimensions.y.toFixed(2);
+            document.getElementById('dim-z').innerText = result.dimensions.z.toFixed(2);
+            document.getElementById('dimensions').style.display = 'block';
+        } else {
+            alert('Error calculating dimensions: ' + result.error);
+        }
+    }
+</script>
+{% endblock %}
