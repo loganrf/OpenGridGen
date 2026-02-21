@@ -25,3 +25,10 @@ The menu along the left side of the screen includes the following modules:
 For each of the above, you can export as a step file or stl for download and view the bounding box dimensions of the resulting design in mm
 
 In the upper right you will find "Settings". Here you can tweak the base dimensions of your gridfinity design for custom setups.
+
+# Acknowledgements
+
+This project makes use of the following open source libraries:
+
+- [Flask](https://flask.palletsprojects.com/) - The Python micro framework for building web applications.
+- [cq-gridfinity](https://github.com/michaelgale/cq-gridfinity) - A python library to build parameterized gridfinity compatible objects, based on [CadQuery](https://github.com/CadQuery/cadquery).

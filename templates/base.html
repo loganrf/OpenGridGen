@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGridGen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h1 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .sidebar a {
+            color: #ccc;
+            text-decoration: none;
+            padding: 10px 0;
+            display: block;
+        }
+        .sidebar a:hover {
+            color: #fff;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+        }
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .header a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        input[type="number"], select {
+            padding: 8px;
+            margin: 5px 0 20px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>OpenGridGen</h1>
+        <a href="/">Home</a>
+        <a href="/box">Box Generator</a>
+        <a href="/baseplate">Baseplate Generator</a>
+    </div>
+    <div class="content">
+        <div class="header">
+            <a href="/settings">Settings</a>
+        </div>
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
