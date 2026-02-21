@@ -1,1 +1,27 @@
 # OpenGridGen
+
+A flask-based web utility for interactively generating standard gridfinity baseplates/containers
+
+# Getting Started
+
+1. Clone & Start the server
+```
+# git clone https://github.com/loganrf/OpenGridGen/
+# cd OpenGridGen
+# python -m venv .venv
+# pip install -r requirements.txt
+# flask run
+```
+
+2. Open the app in your browser at 127.0.0.1:4242
+
+# Usage
+
+The menu along the left side of the screen includes the following modules:
+
+- Box Generator: Allows you to generate a box by specifying width, length, height in gridfinity units
+- Baseplate Generator: Allows you to generate a baseplate by specifying width and length
+
+For each of the above, you can export as a step file or stl for download and view the bounding box dimensions of the resulting design in mm
+
+In the upper right you will find "Settings". Here you can tweak the base dimensions of your gridfinity design for custom setups.
