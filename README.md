@@ -15,6 +15,20 @@ A flask-based web utility for interactively generating standard gridfinity basep
 
 2. Open the app in your browser at 127.0.0.1:4242
 
+# Running with Docker
+
+1. Build the Docker image
+   ```bash
+   docker build -t opengridgen .
+   ```
+
+2. Run the Docker container
+   ```bash
+   docker run -p 4242:4242 opengridgen
+   ```
+
+3. Open the app in your browser at http://127.0.0.1:4242
+
 # Usage
 
 The menu along the left side of the screen includes the following modules:
