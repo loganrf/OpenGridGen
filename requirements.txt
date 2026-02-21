@@ -1,4 +1,4 @@
 flask
 cqgridfinity
 cadquery
-cq-kit
+cqkit

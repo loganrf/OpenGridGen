@@ -2,13 +2,18 @@
 
 A flask-based web utility for interactively generating standard gridfinity baseplates/containers
 
+# Prerequisites
+
+- Python 3.10 - 3.12 (Python 3.13 is not yet supported due to CadQuery dependencies)
+
 # Getting Started
 
 1. Clone & Start the server
 ```
 # git clone https://github.com/loganrf/OpenGridGen/
 # cd OpenGridGen
-# python -m venv .venv
+# python3 -m venv .venv
+# source .venv/bin/activate
 # pip install -r requirements.txt
 # flask run
 ```
