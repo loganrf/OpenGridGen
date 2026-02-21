@@ -5,9 +5,10 @@ WORKDIR /app
 
 # Install system dependencies required for CadQuery
 RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglx-mesa0 \
+    libgl1-mesa-glx \
     libglib2.0-0 \
+    libxrender1 \
+    libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -21,6 +22,4 @@ COPY . .
 EXPOSE 4242
 
 # Run the application
-# We use flask run directly, binding to 0.0.0.0 for external access
-# and specifying port 4242 to match the application default.
 CMD ["flask", "run", "--host=0.0.0.0", "--port=4242"]
