@@ -1,11 +1,14 @@
-FROM --platform=linux/amd64 python:3.12-slim
+FROM --platform=linux/amd64 python:3.12-slim-bookworm
 
 # Set working directory
 WORKDIR /app
 
 # Install system dependencies required for CadQuery
+# libgl1-mesa-glx is deprecated/transitional in Bookworm and removed in Trixie
+# We install libgl1 and libglx-mesa0 instead.
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
+    libglx-mesa0 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
