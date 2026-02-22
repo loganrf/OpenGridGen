@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, after_this_request
 import cqgridfinity
 import cqgridfinity.gf_baseplate
 import cqgridfinity.gf_box
@@ -15,6 +15,16 @@ from gears import Gear
 from hinges import Hinge
 
 app = Flask(__name__)
+
+def send_and_remove(filepath, **kwargs):
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(filepath)
+        except Exception as error:
+            app.logger.error(f"Error removing or closing downloaded file handle: {error}")
+        return response
+    return send_file(filepath, **kwargs)
 
 # Global settings (simplified for single-user local tool)
 SETTINGS = {
@@ -173,7 +183,7 @@ def preview_box():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         box.save_stl_file(filepath)
 
-        response = send_file(filepath, mimetype='model/stl')
+        response = send_and_remove(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except Exception as e:
@@ -191,8 +201,9 @@ def download_box():
 
         box = cqgridfinity.GridfinityBox(length, width, height, solid=solid)
 
-        filename = f"box_{width}x{length}x{height}.{format_type}"
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        user_filename = f"box_{width}x{length}x{height}.{format_type}"
+        disk_filename = f"download_box_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
 
         if format_type == 'step':
             box.save_step_file(filepath)
@@ -201,7 +212,7 @@ def download_box():
         else:
             return "Invalid format", 400
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except Exception as e:
         return str(e), 500
 
@@ -233,7 +244,7 @@ def preview_lid():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         lid_obj.save_stl_file(filepath)
 
-        response = send_file(filepath, mimetype='model/stl')
+        response = send_and_remove(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except Exception as e:
@@ -255,8 +266,9 @@ def download_lid():
                                  handle_height=handle_height)
         lid_obj.render() # Update cq_obj
 
-        filename = f"lid_{width}x{length}.{format_type}"
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        user_filename = f"lid_{width}x{length}.{format_type}"
+        disk_filename = f"download_lid_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
 
         if format_type == 'step':
             lid_obj.save_step_file(filepath)
@@ -265,7 +277,7 @@ def download_lid():
         else:
             return "Invalid format", 400
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except Exception as e:
         return str(e), 500
 
@@ -332,7 +344,7 @@ def preview_baseplate():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         bp.save_stl_file(filepath)
 
-        response = send_file(filepath, mimetype='model/stl')
+        response = send_and_remove(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except Exception as e:
@@ -360,8 +372,9 @@ def download_baseplate():
                                      width_padding=padding_width,
                                      **kwargs)
 
-        filename = f"baseplate_{width}x{length}.{format_type}"
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        user_filename = f"baseplate_{width}x{length}.{format_type}"
+        disk_filename = f"download_baseplate_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
 
         if format_type == 'step':
             bp.save_step_file(filepath)
@@ -370,7 +383,7 @@ def download_baseplate():
         else:
             return "Invalid format", 400
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except Exception as e:
         return str(e), 500
 
@@ -405,7 +418,7 @@ def preview_gear():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         gear_obj.save_stl_file(filepath)
 
-        response = send_file(filepath, mimetype='model/stl')
+        response = send_and_remove(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except Exception as e:
@@ -427,8 +440,9 @@ def download_gear():
                         shaft_type=shaft_type)
         gear_obj.render()
 
-        filename = f"gear_m{module}_z{teeth}.{format_type}"
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        user_filename = f"gear_m{module}_z{teeth}.{format_type}"
+        disk_filename = f"download_gear_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
 
         if format_type == 'step':
             gear_obj.save_step_file(filepath)
@@ -437,7 +451,7 @@ def download_gear():
         else:
             return "Invalid format", 400
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except Exception as e:
         return str(e), 500
 
@@ -462,7 +476,7 @@ def preview_hinge():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         hinge_obj.save_stl_file(filepath)
 
-        response = send_file(filepath, mimetype='model/stl')
+        response = send_and_remove(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except Exception as e:
@@ -482,8 +496,9 @@ def download_hinge():
                           pin_diam=pin_diam, clearance=clearance)
         hinge_obj.render()
 
-        filename = f"hinge_{length}x{width}.{format_type}"
-        filepath = os.path.join(tempfile.gettempdir(), filename)
+        user_filename = f"hinge_{length}x{width}.{format_type}"
+        disk_filename = f"download_hinge_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
 
         if format_type == 'step':
             hinge_obj.save_step_file(filepath)
@@ -492,7 +507,7 @@ def download_hinge():
         else:
             return "Invalid format", 400
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except Exception as e:
         return str(e), 500
 
