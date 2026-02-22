@@ -19,7 +19,7 @@ class GridfinityBoxLid(cqgridfinity.GridfinityBox):
         # Render the base box (lid body)
         box = super().render()
 
-        if self.handle_style == "simple":
+        if self.handle_style == "simple" or self.handle_style == "loop":
             # Calculate handle dimensions
             # Use bounding box to find top Z and dimensions
             bb = box.val().BoundingBox()
@@ -38,6 +38,23 @@ class GridfinityBoxLid(cqgridfinity.GridfinityBox):
                 .rect(h_width, h_length)
                 .extrude(self.handle_height)
             )
+
+            if self.handle_style == "loop":
+                # Adaptive thickness
+                wall = min(3.0, min_dim / 10.0, self.handle_height / 3.0)
+
+                cutout_h = self.handle_height - wall
+                cutout_w = h_length - (2 * wall)
+
+                if cutout_h > 0 and cutout_w > 0:
+                     cutout = (
+                         cq.Workplane("YZ")
+                         .workplane(offset=0) # Center
+                         .center(0, top_z + cutout_h / 2.0)
+                         .rect(cutout_w, cutout_h)
+                         .extrude(h_width * 2.0, both=True) # Cut through everything in X
+                     )
+                     handle = handle.cut(cutout)
 
             # Union the handle with the box
             box = box.union(handle)
