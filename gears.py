@@ -2,13 +2,17 @@ import cadquery as cq
 from math import cos, sin, tan, pi, sqrt, radians, acos, atan2
 
 class Gear:
-    def __init__(self, teeth=20, module=1.0, width=5.0, bore_d=5.0, pressure_angle=20.0, shaft_type='circle'):
+    def __init__(self, teeth=20, module=1.0, width=5.0, bore_d=5.0, pressure_angle=20.0, shaft_type='circle',
+                 helix_angle=0.0, gear_type='spur', backlash=0.0):
         self.teeth = int(teeth)
         self.module = float(module)
         self.width = float(width)
         self.bore_d = float(bore_d)
         self.pressure_angle = float(pressure_angle)
         self.shaft_type = shaft_type
+        self.helix_angle = float(helix_angle)
+        self.gear_type = gear_type.lower()
+        self.backlash = float(backlash)
         self.cq_obj = None
 
     def render(self):
@@ -46,7 +50,12 @@ class Gear:
 
         points_inv = get_involute_points(15)
 
-        theta_thick = pi / (2 * z)
+        # Backlash adjustment
+        angle_backlash = 0.0
+        if self.backlash > 0:
+            angle_backlash = (self.backlash / (2.0 * r_pitch))
+
+        theta_thick = (pi / (2 * z)) - angle_backlash
         inv_alpha = tan(phi) - phi
         angle_offset = theta_thick - inv_alpha
 
@@ -83,7 +92,36 @@ class Gear:
         # This creates the Bottom Land.
 
         gear_wire = cq.Workplane("XY").polyline(full_points).close().wire()
-        gear_face = gear_wire.extrude(width)
+
+        if self.gear_type == 'helical':
+            helix_rad = radians(self.helix_angle)
+            twist_angle = (width * tan(helix_rad) * 180.0) / (pi * r_pitch)
+            gear_face = gear_wire.twistExtrude(width, twist_angle)
+
+        elif self.gear_type == 'herringbone':
+            helix_rad = radians(self.helix_angle)
+            twist_angle = (width * tan(helix_rad) * 180.0) / (pi * r_pitch)
+
+            half_width = width / 2.0
+            half_twist = twist_angle / 2.0
+
+            # Bottom half
+            b_solid = gear_wire.twistExtrude(half_width, half_twist)
+
+            # Top half
+            # Rotate and translate the wire to the start of the second section
+            top_solid = (
+                gear_wire
+                .rotate((0,0,0), (0,0,1), half_twist)
+                .translate((0,0,half_width))
+                .toPending()
+                .twistExtrude(half_width, -half_twist)
+            )
+
+            gear_face = b_solid.union(top_solid)
+
+        else:
+            gear_face = gear_wire.extrude(width)
 
         # Add the bore
         if self.shaft_type == 'circle':

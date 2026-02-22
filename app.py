@@ -405,10 +405,14 @@ def preview_gear():
         bore_d = float(data.get('bore_d', 5.0))
         pressure_angle = float(data.get('pressure_angle', 20.0))
         shaft_type = data.get('shaft_type', 'circle')
+        helix_angle = float(data.get('helix_angle', 0.0))
+        gear_type = data.get('gear_type', 'spur')
+        backlash = float(data.get('backlash', 0.0))
 
         gear_obj = Gear(teeth=teeth, module=module, width=width,
                         bore_d=bore_d, pressure_angle=pressure_angle,
-                        shaft_type=shaft_type)
+                        shaft_type=shaft_type, helix_angle=helix_angle,
+                        gear_type=gear_type, backlash=backlash)
 
         cq_obj = gear_obj.render()
         bb = cq_obj.val().BoundingBox()
@@ -433,11 +437,15 @@ def download_gear():
         bore_d = float(request.form.get('bore_d', 5.0))
         pressure_angle = float(request.form.get('pressure_angle', 20.0))
         shaft_type = request.form.get('shaft_type', 'circle')
+        helix_angle = float(request.form.get('helix_angle', 0.0))
+        gear_type = request.form.get('gear_type', 'spur')
+        backlash = float(request.form.get('backlash', 0.0))
         format_type = request.form.get('format', 'step').lower()
 
         gear_obj = Gear(teeth=teeth, module=module, width=width,
                         bore_d=bore_d, pressure_angle=pressure_angle,
-                        shaft_type=shaft_type)
+                        shaft_type=shaft_type, helix_angle=helix_angle,
+                        gear_type=gear_type, backlash=backlash)
         gear_obj.render()
 
         user_filename = f"gear_m{module}_z{teeth}.{format_type}"
