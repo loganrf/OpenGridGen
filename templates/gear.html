@@ -25,6 +25,21 @@
         <option value="d_cut">D-Cut</option>
     </select>
 
+    <label for="gear_type">Gear Type:</label>
+    <select id="gear_type" name="gear_type" onchange="toggleHelix()">
+        <option value="spur">Spur</option>
+        <option value="helical">Helical</option>
+        <option value="herringbone">Herringbone</option>
+    </select>
+
+    <div id="helix_container" style="display:none;">
+        <label for="helix_angle">Helix Angle (deg):</label>
+        <input type="number" id="helix_angle" name="helix_angle" value="0.0" step="0.1">
+    </div>
+
+    <label for="backlash">Backlash (mm):</label>
+    <input type="number" id="backlash" name="backlash" value="0.0" step="0.05" min="0.0">
+
     <label for="format">Format:</label>
     <select id="format" name="format">
         <option value="step">STEP</option>
@@ -45,6 +60,21 @@
 </div>
 
 <script>
+    function toggleHelix() {
+        const type = document.getElementById('gear_type').value;
+        const helixContainer = document.getElementById('helix_container');
+        if (type === 'helical' || type === 'herringbone') {
+            helixContainer.style.display = 'block';
+            // Set default if 0 and user switches to helical
+            const angleInput = document.getElementById('helix_angle');
+            if (parseFloat(angleInput.value) === 0) {
+                angleInput.value = 30.0;
+            }
+        } else {
+            helixContainer.style.display = 'none';
+        }
+    }
+
     async function updatePreview() {
         const teeth = document.getElementById('teeth').value;
         const module = document.getElementById('module').value;
@@ -52,13 +82,19 @@
         const bore_d = document.getElementById('bore_d').value;
         const pressure_angle = document.getElementById('pressure_angle').value;
         const shaft_type = document.getElementById('shaft_type').value;
+        const gear_type = document.getElementById('gear_type').value;
+        const helix_angle = document.getElementById('helix_angle').value;
+        const backlash = document.getElementById('backlash').value;
 
         showLoading();
         try {
             const response = await fetch('/api/preview_gear', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teeth, module, width, bore_d, pressure_angle, shaft_type })
+                body: JSON.stringify({
+                    teeth, module, width, bore_d, pressure_angle, shaft_type,
+                    gear_type, helix_angle, backlash
+                })
             });
             if (!response.ok) throw new Error('Preview generation failed');
 

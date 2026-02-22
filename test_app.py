@@ -72,5 +72,20 @@ class OpenGridGenTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('attachment', response.headers['Content-Disposition'])
 
+    def test_preview_gear(self):
+        data = {'teeth': 20, 'module': 1, 'width': 5, 'helix_angle': 30, 'gear_type': 'helical'}
+        response = self.app.post('/api/preview_gear',
+                                 data=json.dumps(data),
+                                 content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, 'model/stl')
+        self.assertIn('X-Dimensions', response.headers)
+
+    def test_download_gear(self):
+        data = {'teeth': 20, 'module': 1, 'width': 5, 'helix_angle': 30, 'gear_type': 'herringbone', 'format': 'step'}
+        response = self.app.post('/api/download_gear', data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response.headers['Content-Disposition'])
+
 if __name__ == '__main__':
     unittest.main()
