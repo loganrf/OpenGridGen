@@ -10,6 +10,7 @@ import tempfile
 import json
 import uuid
 from math import sqrt
+from gridfinity_lid import GridfinityBoxLid
 
 app = Flask(__name__)
 
@@ -195,6 +196,70 @@ def download_box():
             box.save_step_file(filepath)
         elif format_type == 'stl':
             box.save_stl_file(filepath)
+        else:
+            return "Invalid format", 400
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/lid')
+def lid():
+    return render_template('lid.html')
+
+@app.route('/api/preview_lid', methods=['POST'])
+def preview_lid():
+    update_constants()
+    try:
+        data = request.json
+        width = int(data.get('width', 1))
+        length = int(data.get('length', 1))
+        height = float(data.get('height', 0.5))
+        handle_style = data.get('handle_style', 'none')
+        handle_height = float(data.get('handle_height', 5.0))
+
+        lid_obj = GridfinityBoxLid(length, width, height,
+                                 handle_style=handle_style,
+                                 handle_height=handle_height)
+
+        # Get dimensions and update cq_obj
+        cq_obj = lid_obj.render()
+        bb = cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        filename = f"preview_lid_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        lid_obj.save_stl_file(filepath)
+
+        response = send_file(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/download_lid', methods=['POST'])
+def download_lid():
+    update_constants()
+    try:
+        width = int(request.form.get('width', 1))
+        length = int(request.form.get('length', 1))
+        height = float(request.form.get('height', 0.5))
+        format_type = request.form.get('format', 'step').lower()
+        handle_style = request.form.get('handle_style', 'none')
+        handle_height = float(request.form.get('handle_height', 5.0))
+
+        lid_obj = GridfinityBoxLid(length, width, height,
+                                 handle_style=handle_style,
+                                 handle_height=handle_height)
+        lid_obj.render() # Update cq_obj
+
+        filename = f"lid_{width}x{length}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+
+        if format_type == 'step':
+            lid_obj.save_step_file(filepath)
+        elif format_type == 'stl':
+            lid_obj.save_stl_file(filepath)
         else:
             return "Invalid format", 400
 
