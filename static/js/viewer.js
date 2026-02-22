@@ -20,7 +20,7 @@ function initViewer(containerId, blob) {
     const height = container.clientHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xeeeeee);
+    scene.background = new THREE.Color(0x111111);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
     camera.position.set(100, 100, 100);
@@ -32,10 +32,10 @@ function initViewer(containerId, blob) {
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x606060);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
