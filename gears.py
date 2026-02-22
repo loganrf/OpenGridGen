@@ -57,7 +57,9 @@ class Gear:
             return (x * c - y * s, x * s + y * c)
 
         # Upper flank (y > 0, angle > 0) - Root to Tip
-        upper_flank = [rotate_point(p, angle_offset) for p in points_inv]
+        # Mirror points_inv first so the curve bends towards the center line
+        points_inv_mirrored = [(x, -y) for x, y in points_inv]
+        upper_flank = [rotate_point(p, angle_offset) for p in points_inv_mirrored]
 
         # Lower flank (y < 0, angle < 0) - Root to Tip
         lower_flank = [(x, -y) for x, y in upper_flank]
