@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Print In Place Hinge Generator</h2>
+<form id="hingeForm" action="/api/download_hinge" method="POST">
+    <label for="length">Length (mm):</label>
+    <input type="number" id="length" name="length" value="40.0" step="1.0" min="5" required>
+
+    <label for="width">Width (mm):</label>
+    <input type="number" id="width" name="width" value="40.0" step="1.0" min="5" required>
+
+    <label for="height">Height/Thickness (mm):</label>
+    <input type="number" id="height" name="height" value="5.0" step="0.5" min="1" required>
+
+    <label for="pin_diam">Pin Diameter (mm):</label>
+    <input type="number" id="pin_diam" name="pin_diam" value="3.0" step="0.1" min="1" required>
+
+    <label for="clearance">Clearance (mm):</label>
+    <input type="number" id="clearance" name="clearance" value="0.4" step="0.05" min="0.1" required>
+
+    <label for="format">Format:</label>
+    <select id="format" name="format">
+        <option value="step">STEP</option>
+        <option value="stl">STL</option>
+    </select>
+
+    <button type="button" onclick="downloadHinge()">Download</button>
+    <button type="button" onclick="updatePreview()">Preview & Dimensions</button>
+</form>
+
+<div id="preview-container" class="result-box" style="display:none; height: 400px;"></div>
+
+<div id="dimensions" class="result-box" style="display:none;">
+    <h3>Bounding Box Dimensions (mm)</h3>
+    <p>X: <span id="dim-x"></span></p>
+    <p>Y: <span id="dim-y"></span></p>
+    <p>Z: <span id="dim-z"></span></p>
+</div>
+
+<script>
+    async function updatePreview() {
+        const length = document.getElementById('length').value;
+        const width = document.getElementById('width').value;
+        const height = document.getElementById('height').value;
+        const pin_diam = document.getElementById('pin_diam').value;
+        const clearance = document.getElementById('clearance').value;
+
+        showLoading();
+        try {
+            const response = await fetch('/api/preview_hinge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ length, width, height, pin_diam, clearance })
+            });
+            if (!response.ok) throw new Error('Preview generation failed');
+
+            const dimsJson = response.headers.get('X-Dimensions');
+            if (dimsJson) {
+                const dims = JSON.parse(dimsJson);
+                document.getElementById('dim-x').innerText = dims.x.toFixed(2);
+                document.getElementById('dim-y').innerText = dims.y.toFixed(2);
+                document.getElementById('dim-z').innerText = dims.z.toFixed(2);
+                document.getElementById('dimensions').style.display = 'block';
+            }
+
+            const blob = await response.blob();
+            initViewer('preview-container', blob);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function downloadHinge() {
+        const form = document.getElementById('hingeForm');
+        const formData = new FormData(form);
+        const length = document.getElementById('length').value;
+        const width = document.getElementById('width').value;
+        const format = document.getElementById('format').value;
+
+        let filename = `hinge_${length}x${width}`;
+        filename += `.${format}`;
+
+        downloadWithProgress('/api/download_hinge', formData, filename);
+    }
+</script>
+{% endblock %}
