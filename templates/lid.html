@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Box Lid Generator</h2>
+<form id="lidForm" action="/api/download_lid" method="POST">
+    <label for="width">Width (Grid Units):</label>
+    <input type="number" id="width" name="width" value="1" min="1" required>
+
+    <label for="length">Length (Grid Units):</label>
+    <input type="number" id="length" name="length" value="1" min="1" required>
+
+    <label for="height">Height (Height Units, 7mm increments, typically 0.5-1.0):</label>
+    <input type="number" id="height" name="height" value="0.5" min="0.1" step="0.1" required>
+
+    <label for="handle_style">Handle Style:</label>
+    <select id="handle_style" name="handle_style" onchange="toggleHandleHeight()">
+        <option value="none">None</option>
+        <option value="simple">Simple Block</option>
+    </select>
+
+    <div id="handle_height_container" style="display:none;">
+        <label for="handle_height">Handle Height (mm):</label>
+        <input type="number" id="handle_height" name="handle_height" value="5.0" min="1" step="0.5">
+    </div>
+
+    <!-- Hidden Solid option (Lids are solid by default) -->
+    <input type="hidden" id="solid" name="solid" value="true">
+
+    <label for="format">Format:</label>
+    <select id="format" name="format">
+        <option value="step">STEP</option>
+        <option value="stl">STL</option>
+    </select>
+
+    <button type="button" onclick="downloadLid()">Download</button>
+    <button type="button" onclick="updatePreview()">Preview & Dimensions</button>
+</form>
+
+<div id="preview-container" class="result-box" style="display:none; height: 400px;"></div>
+
+<div id="dimensions" class="result-box" style="display:none;">
+    <h3>Bounding Box Dimensions (mm)</h3>
+    <p>X: <span id="dim-x"></span></p>
+    <p>Y: <span id="dim-y"></span></p>
+    <p>Z: <span id="dim-z"></span></p>
+</div>
+
+<script>
+    function toggleHandleHeight() {
+        const style = document.getElementById('handle_style').value;
+        const container = document.getElementById('handle_height_container');
+        container.style.display = (style !== 'none') ? 'block' : 'none';
+    }
+
+    async function updatePreview() {
+        const width = document.getElementById('width').value;
+        const length = document.getElementById('length').value;
+        const height = document.getElementById('height').value;
+        const handle_style = document.getElementById('handle_style').value;
+        const handle_height = document.getElementById('handle_height').value;
+        // solid is implicitly true
+
+        showLoading();
+        try {
+            const response = await fetch('/api/preview_lid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ width, length, height, handle_style, handle_height })
+            });
+            if (!response.ok) throw new Error('Preview generation failed');
+
+            // Extract dimensions from headers
+            const dimsJson = response.headers.get('X-Dimensions');
+            if (dimsJson) {
+                const dims = JSON.parse(dimsJson);
+                document.getElementById('dim-x').innerText = dims.x.toFixed(2);
+                document.getElementById('dim-y').innerText = dims.y.toFixed(2);
+                document.getElementById('dim-z').innerText = dims.z.toFixed(2);
+                document.getElementById('dimensions').style.display = 'block';
+            }
+
+            const blob = await response.blob();
+            initViewer('preview-container', blob);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function downloadLid() {
+        const form = document.getElementById('lidForm');
+        const formData = new FormData(form);
+        const width = document.getElementById('width').value;
+        const length = document.getElementById('length').value;
+        const format = document.getElementById('format').value;
+        const handle = document.getElementById('handle_style').value;
+
+        let filename = `lid_${width}x${length}`;
+        if (handle !== 'none') filename += '_handle';
+        filename += `.${format}`;
+
+        downloadWithProgress('/api/download_lid', formData, filename);
+    }
+</script>
+{% endblock %}
