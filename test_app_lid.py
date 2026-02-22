@@ -36,6 +36,17 @@ class OpenGridGenLidTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.mimetype, 'model/stl')
 
+    def test_preview_lid_with_loop_handle(self):
+        data = {'width': 1, 'length': 1, 'height': 0.5, 'handle_style': 'loop', 'handle_height': 5.0}
+        response = self.app.post('/api/preview_lid',
+                                 data=json.dumps(data),
+                                 content_type='application/json')
+        if response.status_code != 200 or response.mimetype != 'model/stl':
+            print(f"Preview Loop Handle Error: {response.data}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, 'model/stl')
+
     def test_download_lid(self):
         data = {'width': 1, 'length': 1, 'height': 0.5, 'format': 'stl', 'handle_style': 'none'}
         response = self.app.post('/api/download_lid', data=data)
