@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, after_this_request
 import cqgridfinity
 import cqgridfinity.gf_baseplate
 import cqgridfinity.gf_box
@@ -21,6 +21,15 @@ SETTINGS = {
     "GRU": 25.0,
     "GRHU": 5.0
 }
+
+def register_cleanup(filepath):
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(filepath)
+        except Exception as error:
+            app.logger.error("Error removing temp file: %s", error)
+        return response
 
 def update_constants():
     gru = SETTINGS["GRU"]
@@ -173,6 +182,8 @@ def preview_box():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         box.save_stl_file(filepath)
 
+        register_cleanup(filepath)
+
         response = send_file(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
@@ -200,6 +211,8 @@ def download_box():
             box.save_stl_file(filepath)
         else:
             return "Invalid format", 400
+
+        register_cleanup(filepath)
 
         return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
@@ -233,6 +246,8 @@ def preview_lid():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         lid_obj.save_stl_file(filepath)
 
+        register_cleanup(filepath)
+
         response = send_file(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
@@ -264,6 +279,8 @@ def download_lid():
             lid_obj.save_stl_file(filepath)
         else:
             return "Invalid format", 400
+
+        register_cleanup(filepath)
 
         return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
@@ -332,6 +349,8 @@ def preview_baseplate():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         bp.save_stl_file(filepath)
 
+        register_cleanup(filepath)
+
         response = send_file(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
@@ -370,6 +389,8 @@ def download_baseplate():
         else:
             return "Invalid format", 400
 
+        register_cleanup(filepath)
+
         return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
         return str(e), 500
@@ -405,6 +426,8 @@ def preview_gear():
         filepath = os.path.join(tempfile.gettempdir(), filename)
         gear_obj.save_stl_file(filepath)
 
+        register_cleanup(filepath)
+
         response = send_file(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
@@ -437,6 +460,8 @@ def download_gear():
         else:
             return "Invalid format", 400
 
+        register_cleanup(filepath)
+
         return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
         return str(e), 500
@@ -461,6 +486,8 @@ def preview_hinge():
         filename = f"preview_hinge_{uuid.uuid4()}.stl"
         filepath = os.path.join(tempfile.gettempdir(), filename)
         hinge_obj.save_stl_file(filepath)
+
+        register_cleanup(filepath)
 
         response = send_file(filepath, mimetype='model/stl')
         response.headers['X-Dimensions'] = json.dumps(dims)
@@ -491,6 +518,8 @@ def download_hinge():
             hinge_obj.save_stl_file(filepath)
         else:
             return "Invalid format", 400
+
+        register_cleanup(filepath)
 
         return send_file(filepath, as_attachment=True, download_name=filename)
     except Exception as e:
