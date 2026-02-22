@@ -11,6 +11,8 @@ import json
 import uuid
 from math import sqrt
 from gridfinity_lid import GridfinityBoxLid
+from gears import Gear
+from hinges import Hinge
 
 app = Flask(__name__)
 
@@ -365,6 +367,128 @@ def download_baseplate():
             bp.save_step_file(filepath)
         elif format_type == 'stl':
             bp.save_stl_file(filepath)
+        else:
+            return "Invalid format", 400
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/gear')
+def gear():
+    return render_template('gear.html')
+
+@app.route('/hinge')
+def hinge():
+    return render_template('hinge.html')
+
+@app.route('/api/preview_gear', methods=['POST'])
+def preview_gear():
+    try:
+        data = request.json
+        teeth = int(data.get('teeth', 20))
+        module = float(data.get('module', 1.0))
+        width = float(data.get('width', 5.0))
+        bore_d = float(data.get('bore_d', 5.0))
+        pressure_angle = float(data.get('pressure_angle', 20.0))
+        shaft_type = data.get('shaft_type', 'circle')
+
+        gear_obj = Gear(teeth=teeth, module=module, width=width,
+                        bore_d=bore_d, pressure_angle=pressure_angle,
+                        shaft_type=shaft_type)
+
+        cq_obj = gear_obj.render()
+        bb = cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        filename = f"preview_gear_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        gear_obj.save_stl_file(filepath)
+
+        response = send_file(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/download_gear', methods=['POST'])
+def download_gear():
+    try:
+        teeth = int(request.form.get('teeth', 20))
+        module = float(request.form.get('module', 1.0))
+        width = float(request.form.get('width', 5.0))
+        bore_d = float(request.form.get('bore_d', 5.0))
+        pressure_angle = float(request.form.get('pressure_angle', 20.0))
+        shaft_type = request.form.get('shaft_type', 'circle')
+        format_type = request.form.get('format', 'step').lower()
+
+        gear_obj = Gear(teeth=teeth, module=module, width=width,
+                        bore_d=bore_d, pressure_angle=pressure_angle,
+                        shaft_type=shaft_type)
+        gear_obj.render()
+
+        filename = f"gear_m{module}_z{teeth}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+
+        if format_type == 'step':
+            gear_obj.save_step_file(filepath)
+        elif format_type == 'stl':
+            gear_obj.save_stl_file(filepath)
+        else:
+            return "Invalid format", 400
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/api/preview_hinge', methods=['POST'])
+def preview_hinge():
+    try:
+        data = request.json
+        length = float(data.get('length', 40.0))
+        width = float(data.get('width', 40.0))
+        height = float(data.get('height', 5.0))
+        pin_diam = float(data.get('pin_diam', 3.0))
+        clearance = float(data.get('clearance', 0.4))
+
+        hinge_obj = Hinge(length=length, width=width, height=height,
+                          pin_diam=pin_diam, clearance=clearance)
+
+        cq_obj = hinge_obj.render()
+        bb = cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        filename = f"preview_hinge_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        hinge_obj.save_stl_file(filepath)
+
+        response = send_file(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/download_hinge', methods=['POST'])
+def download_hinge():
+    try:
+        length = float(request.form.get('length', 40.0))
+        width = float(request.form.get('width', 40.0))
+        height = float(request.form.get('height', 5.0))
+        pin_diam = float(request.form.get('pin_diam', 3.0))
+        clearance = float(request.form.get('clearance', 0.4))
+        format_type = request.form.get('format', 'step').lower()
+
+        hinge_obj = Hinge(length=length, width=width, height=height,
+                          pin_diam=pin_diam, clearance=clearance)
+        hinge_obj.render()
+
+        filename = f"hinge_{length}x{width}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+
+        if format_type == 'step':
+            hinge_obj.save_step_file(filepath)
+        elif format_type == 'stl':
+            hinge_obj.save_stl_file(filepath)
         else:
             return "Invalid format", 400
 

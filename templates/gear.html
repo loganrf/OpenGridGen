@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Gear Generator</h2>
+<form id="gearForm" action="/api/download_gear" method="POST">
+    <label for="teeth">Number of Teeth:</label>
+    <input type="number" id="teeth" name="teeth" value="20" min="4" required>
+
+    <label for="module">Module (Pitch):</label>
+    <input type="number" id="module" name="module" value="1.0" step="0.1" min="0.1" required>
+
+    <label for="width">Width (Thickness):</label>
+    <input type="number" id="width" name="width" value="5.0" step="0.1" min="0.1" required>
+
+    <label for="bore_d">Shaft/Bore Diameter:</label>
+    <input type="number" id="bore_d" name="bore_d" value="5.0" step="0.1" min="0.1" required>
+
+    <label for="pressure_angle">Pressure Angle (deg):</label>
+    <input type="number" id="pressure_angle" name="pressure_angle" value="20.0" step="0.1" min="0.1" required>
+
+    <label for="shaft_type">Shaft Profile:</label>
+    <select id="shaft_type" name="shaft_type">
+        <option value="circle">Circular</option>
+        <option value="hex">Hexagonal</option>
+        <option value="d_cut">D-Cut</option>
+    </select>
+
+    <label for="format">Format:</label>
+    <select id="format" name="format">
+        <option value="step">STEP</option>
+        <option value="stl">STL</option>
+    </select>
+
+    <button type="button" onclick="downloadGear()">Download</button>
+    <button type="button" onclick="updatePreview()">Preview & Dimensions</button>
+</form>
+
+<div id="preview-container" class="result-box" style="display:none; height: 400px;"></div>
+
+<div id="dimensions" class="result-box" style="display:none;">
+    <h3>Bounding Box Dimensions (mm)</h3>
+    <p>X: <span id="dim-x"></span></p>
+    <p>Y: <span id="dim-y"></span></p>
+    <p>Z: <span id="dim-z"></span></p>
+</div>
+
+<script>
+    async function updatePreview() {
+        const teeth = document.getElementById('teeth').value;
+        const module = document.getElementById('module').value;
+        const width = document.getElementById('width').value;
+        const bore_d = document.getElementById('bore_d').value;
+        const pressure_angle = document.getElementById('pressure_angle').value;
+        const shaft_type = document.getElementById('shaft_type').value;
+
+        showLoading();
+        try {
+            const response = await fetch('/api/preview_gear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teeth, module, width, bore_d, pressure_angle, shaft_type })
+            });
+            if (!response.ok) throw new Error('Preview generation failed');
+
+            const dimsJson = response.headers.get('X-Dimensions');
+            if (dimsJson) {
+                const dims = JSON.parse(dimsJson);
+                document.getElementById('dim-x').innerText = dims.x.toFixed(2);
+                document.getElementById('dim-y').innerText = dims.y.toFixed(2);
+                document.getElementById('dim-z').innerText = dims.z.toFixed(2);
+                document.getElementById('dimensions').style.display = 'block';
+            }
+
+            const blob = await response.blob();
+            initViewer('preview-container', blob);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function downloadGear() {
+        const form = document.getElementById('gearForm');
+        const formData = new FormData(form);
+        const teeth = document.getElementById('teeth').value;
+        const module = document.getElementById('module').value;
+        const format = document.getElementById('format').value;
+
+        let filename = `gear_m${module}_z${teeth}`;
+        filename += `.${format}`;
+
+        downloadWithProgress('/api/download_gear', formData, filename);
+    }
+</script>
+{% endblock %}
