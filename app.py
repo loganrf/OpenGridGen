@@ -3,6 +3,7 @@ import os
 import tempfile
 import json
 import uuid
+import logging
 from generation_utils import (
     GeometryValidationError, GenerationError,
     generate_box_task, generate_baseplate_task, generate_lid_task,
@@ -11,6 +12,14 @@ from generation_utils import (
 from task_runner import run_task_with_timeout
 
 app = Flask(__name__)
+
+# Configure logging
+handler = logging.FileHandler('errors.log')
+handler.setLevel(logging.WARNING)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.WARNING)
 
 def send_and_remove(filepath, **kwargs):
     @after_this_request
@@ -59,10 +68,13 @@ def generate_box_info():
         )
         return jsonify({"success": True, "dimensions": dims})
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/preview_box', methods=['POST'])
@@ -82,10 +94,13 @@ def preview_box():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_box', methods=['POST'])
@@ -112,10 +127,13 @@ def download_box():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/lid')
@@ -139,10 +157,13 @@ def preview_lid():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_lid', methods=['POST'])
@@ -169,10 +190,13 @@ def download_lid():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/api/generate_baseplate_info', methods=['POST'])
@@ -186,10 +210,13 @@ def generate_baseplate_info():
         )
         return jsonify({"success": True, "dimensions": dims})
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/preview_baseplate', methods=['POST'])
@@ -209,10 +236,13 @@ def preview_baseplate():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_baseplate', methods=['POST'])
@@ -239,10 +269,13 @@ def download_baseplate():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/gear')
@@ -274,10 +307,13 @@ def preview_gear():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_gear', methods=['POST'])
@@ -308,10 +344,13 @@ def download_gear():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/api/preview_tube_adapter', methods=['POST'])
@@ -331,10 +370,13 @@ def preview_tube_adapter():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_tube_adapter', methods=['POST'])
@@ -363,10 +405,13 @@ def download_tube_adapter():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/api/preview_hinge', methods=['POST'])
@@ -386,10 +431,13 @@ def preview_hinge():
         response.headers['X-Dimensions'] = json.dumps(dims)
         return response
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return jsonify({"success": False, "error": "Generation timed out"}), 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return jsonify({"success": False, "error": str(e)}), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/download_hinge', methods=['POST'])
@@ -416,10 +464,13 @@ def download_hinge():
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
     except TimeoutError:
+        app.logger.error("Generation timed out")
         return "Generation timed out", 408
     except GeometryValidationError as e:
+        app.logger.warning(f"Geometry validation error: {e}")
         return str(e), 422
     except Exception as e:
+        app.logger.error(f"Unexpected error: {e}", exc_info=True)
         return str(e), 500
 
 if __name__ == '__main__':
