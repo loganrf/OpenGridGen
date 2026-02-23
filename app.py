@@ -4,12 +4,16 @@ import tempfile
 import json
 import uuid
 import logging
+import logging_loki
+from dotenv import load_dotenv
 from generation_utils import (
     GeometryValidationError, GenerationError,
     generate_box_task, generate_baseplate_task, generate_lid_task,
     generate_gear_task, generate_hinge_task, generate_tube_adapter_task
 )
 from task_runner import run_task_with_timeout
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -20,6 +24,29 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.WARNING)
+
+# Configure Loki logging
+loki_url = os.getenv("LOKI_URL")
+if loki_url:
+    try:
+        loki_tags = json.loads(os.getenv("LOKI_TAGS", "{}"))
+        loki_auth = None
+        username = os.getenv("LOKI_USERNAME")
+        password = os.getenv("LOKI_PASSWORD")
+        if username and password:
+            loki_auth = (username, password)
+
+        loki_handler = logging_loki.LokiHandler(
+            url=loki_url,
+            tags=loki_tags,
+            auth=loki_auth,
+            version="1",
+        )
+        loki_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(loki_handler)
+        app.logger.info("Loki logging enabled")
+    except Exception as e:
+        app.logger.error(f"Failed to configure Loki logging: {e}")
 
 def send_and_remove(filepath, **kwargs):
     @after_this_request
