@@ -2,3 +2,5 @@ flask
 cqgridfinity
 cadquery
 cqkit
+python-logging-loki
+python-dotenv
