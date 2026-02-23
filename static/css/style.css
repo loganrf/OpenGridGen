@@ -263,3 +263,4 @@ button.secondary:hover {
         max-width: 100%;
     }
 }
+.sidebar nav { display: flex; flex-direction: column; }

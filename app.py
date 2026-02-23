@@ -6,7 +6,7 @@ import uuid
 from generation_utils import (
     GeometryValidationError, GenerationError,
     generate_box_task, generate_baseplate_task, generate_lid_task,
-    generate_gear_task, generate_hinge_task
+    generate_gear_task, generate_hinge_task, generate_tube_adapter_task
 )
 from task_runner import run_task_with_timeout
 
@@ -253,6 +253,10 @@ def gear():
 def hinge():
     return render_template('hinge.html')
 
+@app.route('/tube-adapter')
+def tube_adapter():
+    return render_template('tube_adapter.html')
+
 @app.route('/api/preview_gear', methods=['POST'])
 def preview_gear():
     try:
@@ -300,6 +304,61 @@ def download_gear():
             generate_gear_task,
             kwargs={'params': params, 'settings': SETTINGS, 'output_path': filepath, 'format': format_type},
             timeout=120
+        )
+
+        return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
+    except TimeoutError:
+        return "Generation timed out", 408
+    except GeometryValidationError as e:
+        return str(e), 422
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/api/preview_tube_adapter', methods=['POST'])
+def preview_tube_adapter():
+    try:
+        data = request.json
+        filename = f"preview_tube_adapter_{uuid.uuid4()}.stl"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+
+        dims = run_task_with_timeout(
+            generate_tube_adapter_task,
+            kwargs={'params': data, 'settings': SETTINGS, 'output_path': filepath, 'format': 'stl'},
+            timeout=60
+        )
+
+        response = send_and_remove(filepath, mimetype='model/stl')
+        response.headers['X-Dimensions'] = json.dumps(dims)
+        return response
+    except TimeoutError:
+        return jsonify({"success": False, "error": "Generation timed out"}), 408
+    except GeometryValidationError as e:
+        return jsonify({"success": False, "error": str(e)}), 422
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/download_tube_adapter', methods=['POST'])
+def download_tube_adapter():
+    try:
+        params = {
+            'side_a_id': float(request.form.get('side_a_id', 4.0)),
+            'side_a_od': float(request.form.get('side_a_od', 6.0)),
+            'side_a_barb': request.form.get('side_a_barb') == 'true',
+            'side_b_id': float(request.form.get('side_b_id', 4.0)),
+            'side_b_od': float(request.form.get('side_b_od', 6.0)),
+            'side_b_barb': request.form.get('side_b_barb') == 'true',
+            'length': float(request.form.get('length', 30.0))
+        }
+        format_type = request.form.get('format', 'step').lower()
+
+        user_filename = f"adapter_a{params['side_a_od']}_b{params['side_b_od']}.{format_type}"
+        disk_filename = f"download_tube_adapter_{uuid.uuid4()}.{format_type}"
+        filepath = os.path.join(tempfile.gettempdir(), disk_filename)
+
+        run_task_with_timeout(
+            generate_tube_adapter_task,
+            kwargs={'params': params, 'settings': SETTINGS, 'output_path': filepath, 'format': format_type},
+            timeout=60
         )
 
         return send_and_remove(filepath, as_attachment=True, download_name=user_filename)
