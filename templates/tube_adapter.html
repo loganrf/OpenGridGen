@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Tube Adapter Generator</h2>
+<form id="adapterForm" method="POST">
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <h3>Side A</h3>
+            <div class="form-group">
+                <label for="side_a_id">Interior Diameter (mm):</label>
+                <input type="number" id="side_a_id" name="side_a_id" value="4.0" step="0.1" min="0.1" required>
+            </div>
+            <div class="form-group">
+                <label for="side_a_od">Exterior Diameter (mm):</label>
+                <input type="number" id="side_a_od" name="side_a_od" value="6.0" step="0.1" min="0.1" required>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <input type="checkbox" id="side_a_barb" name="side_a_barb" value="true" style="width: auto;">
+                <label for="side_a_barb" style="display:inline;">Add Barbs</label>
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 200px;">
+            <h3>Side B</h3>
+            <div class="form-group">
+                <label for="side_b_id">Interior Diameter (mm):</label>
+                <input type="number" id="side_b_id" name="side_b_id" value="4.0" step="0.1" min="0.1" required>
+            </div>
+            <div class="form-group">
+                <label for="side_b_od">Exterior Diameter (mm):</label>
+                <input type="number" id="side_b_od" name="side_b_od" value="6.0" step="0.1" min="0.1" required>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <input type="checkbox" id="side_b_barb" name="side_b_barb" value="true" style="width: auto;">
+                <label for="side_b_barb" style="display:inline;">Add Barbs</label>
+            </div>
+        </div>
+    </div>
+
+    <h3>General</h3>
+    <div class="form-group">
+        <label for="length">Total Length (mm):</label>
+        <input type="number" id="length" name="length" value="30.0" step="0.1" min="1.0" required>
+    </div>
+
+    <div class="form-group">
+        <label for="format">Format:</label>
+        <select id="format" name="format">
+            <option value="step">STEP</option>
+            <option value="stl">STL</option>
+        </select>
+    </div>
+
+    <div class="actions" style="margin-top: 20px;">
+        <button type="button" onclick="downloadAdapter()">Download</button>
+        <button type="button" class="secondary" onclick="updatePreview()">Preview</button>
+    </div>
+</form>
+
+<div id="preview-container" class="result-box" style="display:none; height: 500px;"></div>
+
+<div id="dimensions" class="result-box" style="display:none;">
+    <h3>Dimensions</h3>
+    <p>Bounding Box: <span id="dim-x"></span> x <span id="dim-y"></span> x <span id="dim-z"></span> mm</p>
+</div>
+
+<script>
+    async function updatePreview() {
+        const data = {
+            side_a_id: document.getElementById('side_a_id').value,
+            side_a_od: document.getElementById('side_a_od').value,
+            side_a_barb: document.getElementById('side_a_barb').checked,
+            side_b_id: document.getElementById('side_b_id').value,
+            side_b_od: document.getElementById('side_b_od').value,
+            side_b_barb: document.getElementById('side_b_barb').checked,
+            length: document.getElementById('length').value
+        };
+
+        showLoading();
+        try {
+            const response = await fetch('/api/preview_tube_adapter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text(); // Get error text from response
+                throw new Error(errText || 'Preview generation failed');
+            }
+
+            const dimsJson = response.headers.get('X-Dimensions');
+            if (dimsJson) {
+                const dims = JSON.parse(dimsJson);
+                document.getElementById('dim-x').innerText = dims.x.toFixed(2);
+                document.getElementById('dim-y').innerText = dims.y.toFixed(2);
+                document.getElementById('dim-z').innerText = dims.z.toFixed(2);
+                document.getElementById('dimensions').style.display = 'block';
+            }
+
+            const blob = await response.blob();
+            // Assuming initViewer is defined globally (e.g. from static/js/viewer.js)
+            // Function signature: initViewer(containerId, blob)
+            // Wait, viewer.js signature is initViewer(containerId, blob) based on reading the file.
+            // Wait, previous file read showed: function initViewer(containerId, blob) {
+
+            // Check box.html: initViewer('preview-container', blob);
+            // So my previous assumption was correct.
+
+            // Wait, viewer.js:
+            /*
+            function initViewer(containerId, blob) {
+                const container = document.getElementById(containerId);
+                // ...
+                const url = URL.createObjectURL(blob);
+                loader.load(url, ...);
+            }
+            */
+            // But wait, the loader is STLLoader.
+            // If the blob is STL, it works.
+            // Does app.py return STL? Yes, format='stl'.
+
+            document.getElementById('preview-container').style.display = 'block';
+            initViewer('preview-container', blob);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+            console.error(error);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function downloadAdapter() {
+        const form = document.getElementById('adapterForm');
+        const formData = new FormData(form);
+        const format = document.getElementById('format').value;
+        const filename = `tube_adapter.${format}`;
+
+        // downloadWithProgress is defined in base.html
+        downloadWithProgress('/api/download_tube_adapter', formData, filename);
+    }
+</script>
+{% endblock %}

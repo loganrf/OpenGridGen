@@ -8,6 +8,7 @@ from math import sqrt
 from gears import Gear
 from hinges import Hinge
 from gridfinity_lid import GridfinityBoxLid
+from tube_adapter import TubeAdapter
 
 class GeometryValidationError(Exception):
     pass
@@ -178,6 +179,39 @@ def generate_box_task(params, settings, output_path=None, format=None):
                 box.save_step_file(output_path)
             elif format == 'stl':
                 box.save_stl_file(output_path)
+
+        return dims
+    except Exception as e:
+        if isinstance(e, GeometryValidationError):
+            raise e
+        raise GenerationError(str(e))
+
+
+def generate_tube_adapter_task(params, settings, output_path=None, format=None):
+    try:
+        side_a_id = float(params.get('side_a_id', 4.0))
+        side_a_od = float(params.get('side_a_od', 6.0))
+        side_a_barb = params.get('side_a_barb', False)
+        side_b_id = float(params.get('side_b_id', 4.0))
+        side_b_od = float(params.get('side_b_od', 6.0))
+        side_b_barb = params.get('side_b_barb', False)
+        length = float(params.get('length', 30.0))
+
+        adapter_obj = TubeAdapter(side_a_id=side_a_id, side_a_od=side_a_od, side_a_barb=side_a_barb,
+                                  side_b_id=side_b_id, side_b_od=side_b_od, side_b_barb=side_b_barb,
+                                  length=length)
+
+        cq_obj = adapter_obj.render()
+        validate_geometry(cq_obj)
+
+        bb = cq_obj.val().BoundingBox()
+        dims = {"x": bb.xlen, "y": bb.ylen, "z": bb.zlen}
+
+        if output_path and format:
+            if format == 'step':
+                adapter_obj.save_step_file(output_path)
+            elif format == 'stl':
+                adapter_obj.save_stl_file(output_path)
 
         return dims
     except Exception as e:
