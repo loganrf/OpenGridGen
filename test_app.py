@@ -2,8 +2,14 @@ import unittest
 import json
 from app import app
 
+import logging_loki
+
 class OpenGridGenTestCase(unittest.TestCase):
     def setUp(self):
+        # Remove LokiHandler to avoid network calls
+        for h in app.logger.handlers[:]:
+            if isinstance(h, logging_loki.LokiHandler):
+                app.logger.removeHandler(h)
         self.app = app.test_client()
         self.app.testing = True
 
