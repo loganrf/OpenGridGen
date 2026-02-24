@@ -53,8 +53,7 @@ class TubeAdapter:
             num_barbs = self.num_barbs
             barb_width = self.barb_width
 
-            margin = section_len * 0.1
-            available_len = section_len - 2 * margin
+            available_len = section_len
 
             # Check if barbs fit
             required_len = num_barbs * barb_width
@@ -65,9 +64,12 @@ class TubeAdapter:
                 step = available_len / num_barbs
 
                 for i in range(num_barbs):
-                    slot_start = section_start_z + margin + i * step
-                    # Center in slot:
-                    z_pos = slot_start + (step - barb_width) / 2
+                    slot_start = section_start_z + i * step
+
+                    if direction == 'A':
+                        z_pos = slot_start
+                    else:
+                        z_pos = slot_start + step - barb_width
 
                     if direction == 'A':
                         # Side A (Left): Insert Left->Right. Removal Right->Left.
