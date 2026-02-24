@@ -65,20 +65,27 @@ class Gear:
             s = sin(ang)
             return (x * c - y * s, x * s + y * c)
 
-        # Upper flank (y > 0, angle > 0) - Root to Tip
-        # Mirror points_inv first so the curve bends towards the center line
-        points_inv_mirrored = [(x, -y) for x, y in points_inv]
-        upper_flank = [rotate_point(p, angle_offset) for p in points_inv_mirrored]
+        # Top flank (y > 0)
+        # Rotate involute points by angle_offset
+        top_flank = [rotate_point(p, angle_offset) for p in points_inv]
 
-        # Lower flank (y < 0, angle < 0) - Root to Tip
-        lower_flank = [(x, -y) for x, y in upper_flank]
+        # Handle Undercut / Base circle > Root circle
+        if r_base > r_dedendum:
+            # Extend the flank radially to the root circle
+            # The first point of top_flank is at r_base, with angle = angle_offset
+            # We add a point at r_dedendum with the same angle
+            # Note: We must recalculate the point based on angle because rotate_point handles tuple logic
+            # Easier to just construct it directly.
+            root_pt_top = (r_dedendum * cos(angle_offset), r_dedendum * sin(angle_offset))
+            top_flank.insert(0, root_pt_top)
+
+        # Bottom flank (y < 0) - Mirror of Top flank
+        bottom_flank = [(x, -y) for x, y in top_flank]
 
         # Tooth profile CCW:
-        # Up Lower Flank (RootL -> TipL)
-        # Across Top Land (TipL -> TipR)
-        # Down Upper Flank (TipR -> RootR)
+        # RootBottom -> TipBottom -> TipTop -> RootTop
 
-        tooth_poly = lower_flank + list(reversed(upper_flank))
+        tooth_poly = bottom_flank + list(reversed(top_flank))
 
         full_points = []
         for i in range(z):
