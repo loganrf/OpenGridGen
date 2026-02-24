@@ -25,28 +25,16 @@ handler.setFormatter(formatter)
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.WARNING)
 
-# Configure Loki logging
-loki_url = os.getenv("LOKI_URL")
-if loki_url:
-    try:
-        loki_tags = json.loads(os.getenv("LOKI_TAGS", "{}"))
-        loki_auth = None
-        username = os.getenv("LOKI_USERNAME")
-        password = os.getenv("LOKI_PASSWORD")
-        if username and password:
-            loki_auth = (username, password)
+# Configure the Loki Handler
+handler = logging_loki.LokiHandler(
+    url="http://192.168.1.223:3100/loki/api/v1/push",
+    tags={"application": "opengridgen"},
+    version="1",
+)
 
-        loki_handler = logging_loki.LokiHandler(
-            url=loki_url,
-            tags=loki_tags,
-            auth=loki_auth,
-            version="1",
-        )
-        loki_handler.setLevel(logging.WARNING)
-        app.logger.addHandler(loki_handler)
-        app.logger.info("Loki logging enabled")
-    except Exception as e:
-        app.logger.error(f"Failed to configure Loki logging: {e}")
+# Add the handler to the Flask logger
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
 
 def send_and_remove(filepath, **kwargs):
     @after_this_request
@@ -66,6 +54,7 @@ SETTINGS = {
 
 @app.route('/')
 def index():
+    app.logger.info('Direct to Loki: Hello endpoint hit!')
     return render_template('index.html')
 
 @app.route('/box')

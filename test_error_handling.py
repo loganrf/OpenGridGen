@@ -5,8 +5,14 @@ from unittest.mock import patch, MagicMock
 from app import app
 from generation_utils import GeometryValidationError
 
+import logging_loki
+
 class ErrorHandlingTestCase(unittest.TestCase):
     def setUp(self):
+        # Remove LokiHandler to avoid network calls
+        for h in app.logger.handlers[:]:
+            if isinstance(h, logging_loki.LokiHandler):
+                app.logger.removeHandler(h)
         self.app = app.test_client()
         self.app.testing = True
 
