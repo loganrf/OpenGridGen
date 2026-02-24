@@ -4,7 +4,8 @@ class TubeAdapter:
     def __init__(self,
                  side_a_id=4.0, side_a_od=6.0, side_a_barb=False,
                  side_b_id=4.0, side_b_od=6.0, side_b_barb=False,
-                 length=30.0):
+                 length=30.0,
+                 num_barbs=3, barb_height_percentage=10.0, barb_width=2.0):
         self.side_a_id = float(side_a_id)
         self.side_a_od = float(side_a_od)
         self.side_a_barb = bool(side_a_barb)
@@ -12,6 +13,9 @@ class TubeAdapter:
         self.side_b_od = float(side_b_od)
         self.side_b_barb = bool(side_b_barb)
         self.length = float(length)
+        self.num_barbs = int(num_barbs)
+        self.barb_height_percentage = float(barb_height_percentage)
+        self.barb_width = float(barb_width)
         self.cq_obj = None
 
     def render(self):
@@ -45,33 +49,43 @@ class TubeAdapter:
 
         # Barb Logic
         def add_barbs(obj, od, section_start_z, section_len, direction):
-            barb_h = min(1.0, 0.1 * od)
-            num_barbs = 3
+            barb_h = od * (self.barb_height_percentage / 100.0)
+            num_barbs = self.num_barbs
+            barb_width = self.barb_width
+
             margin = section_len * 0.1
-            available_len = section_len - 2*margin
-            step = available_len / num_barbs
-            barb_width = step * 0.6 # Make barbs narrower than spacing
+            available_len = section_len - 2 * margin
 
-            for i in range(num_barbs):
-                z_pos = section_start_z + margin + i * step
+            # Check if barbs fit
+            required_len = num_barbs * barb_width
+            if required_len > available_len:
+                raise ValueError(f"Barbs do not fit. Required {required_len:.2f}mm, available {available_len:.2f}mm")
 
-                if direction == 'A':
-                    # Side A (Left): Insert Left->Right. Removal Right->Left.
-                    # Vertical Face at Right (High Z). Ramp at Left (Low Z).
-                    # Cone: Bottom(Low Z)=R_small, Top(High Z)=R_large
-                    r1 = od / 2
-                    r2 = od / 2 + barb_h
-                else:
-                    # Side B (Right): Insert Right->Left. Removal Left->Right.
-                    # Vertical Face at Left (Low Z). Ramp at Right (High Z).
-                    # Cone: Bottom(Low Z)=R_large, Top(High Z)=R_small
-                    r1 = od / 2 + barb_h
-                    r2 = od / 2
+            if num_barbs > 0:
+                step = available_len / num_barbs
 
-                # Create cone using loft
-                b = cq.Workplane("XY").workplane(offset=z_pos).circle(r1).workplane(offset=barb_width).circle(r2).loft()
+                for i in range(num_barbs):
+                    slot_start = section_start_z + margin + i * step
+                    # Center in slot:
+                    z_pos = slot_start + (step - barb_width) / 2
 
-                obj = obj.union(b)
+                    if direction == 'A':
+                        # Side A (Left): Insert Left->Right. Removal Right->Left.
+                        # Vertical Face at Right (High Z). Ramp at Left (Low Z).
+                        # Cone: Bottom(Low Z)=R_small, Top(High Z)=R_large
+                        r1 = od / 2
+                        r2 = od / 2 + barb_h
+                    else:
+                        # Side B (Right): Insert Right->Left. Removal Left->Right.
+                        # Vertical Face at Left (Low Z). Ramp at Right (High Z).
+                        # Cone: Bottom(Low Z)=R_large, Top(High Z)=R_small
+                        r1 = od / 2 + barb_h
+                        r2 = od / 2
+
+                    # Create cone using loft
+                    b = cq.Workplane("XY").workplane(offset=z_pos).circle(r1).workplane(offset=barb_width).circle(r2).loft()
+
+                    obj = obj.union(b)
             return obj
 
         if self.side_a_barb:

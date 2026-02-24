@@ -37,6 +37,22 @@
         </div>
     </div>
 
+    <h3>Barb Settings</h3>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="form-group">
+            <label for="num_barbs">Number of Barbs:</label>
+            <input type="number" id="num_barbs" name="num_barbs" value="3" step="1" min="1" required>
+        </div>
+        <div class="form-group">
+            <label for="barb_height_percentage">Barb Height (% of Diameter):</label>
+            <input type="number" id="barb_height_percentage" name="barb_height_percentage" value="10.0" step="0.1" min="0.1" required>
+        </div>
+        <div class="form-group">
+            <label for="barb_width">Barb Width (mm):</label>
+            <input type="number" id="barb_width" name="barb_width" value="2.0" step="0.1" min="0.1" required>
+        </div>
+    </div>
+
     <h3>General</h3>
     <div class="form-group">
         <label for="length">Total Length (mm):</label>
@@ -73,7 +89,10 @@
             side_b_id: document.getElementById('side_b_id').value,
             side_b_od: document.getElementById('side_b_od').value,
             side_b_barb: document.getElementById('side_b_barb').checked,
-            length: document.getElementById('length').value
+            length: document.getElementById('length').value,
+            num_barbs: document.getElementById('num_barbs').value,
+            barb_height_percentage: document.getElementById('barb_height_percentage').value,
+            barb_width: document.getElementById('barb_width').value
         };
 
         showLoading();

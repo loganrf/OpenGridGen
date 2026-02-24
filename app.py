@@ -405,7 +405,10 @@ def download_tube_adapter():
             'side_b_id': float(request.form.get('side_b_id', 4.0)),
             'side_b_od': float(request.form.get('side_b_od', 6.0)),
             'side_b_barb': request.form.get('side_b_barb') == 'true',
-            'length': float(request.form.get('length', 30.0))
+            'length': float(request.form.get('length', 30.0)),
+            'num_barbs': int(request.form.get('num_barbs', 3)),
+            'barb_height_percentage': float(request.form.get('barb_height_percentage', 10.0)),
+            'barb_width': float(request.form.get('barb_width', 2.0))
         }
         format_type = request.form.get('format', 'step').lower()
 
