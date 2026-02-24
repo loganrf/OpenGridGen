@@ -10,6 +10,13 @@ from hinges import Hinge
 from gridfinity_lid import GridfinityBoxLid
 from tube_adapter import TubeAdapter
 
+# OCP imports for enhanced validation
+from OCP.BRepCheck import BRepCheck_Analyzer
+from OCP.TopExp import TopExp_Explorer
+from OCP.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX, TopAbs_WIRE, TopAbs_SHELL, TopAbs_SOLID, TopAbs_COMPOUND, TopAbs_COMPSOLID
+from OCP.BRepBndLib import BRepBndLib
+from OCP.Bnd import Bnd_Box
+
 class GeometryValidationError(Exception):
     pass
 
@@ -87,6 +94,75 @@ def update_constants(settings):
             if hasattr(mod, key):
                 setattr(mod, key, getattr(cqgridfinity.constants, key))
 
+def check_geometry_errors(shape):
+    """
+    Detailed check of geometry errors using BRepCheck_Analyzer.
+    Returns a string describing the errors found, or None if valid.
+    """
+    analyzer = BRepCheck_Analyzer(shape)
+    if analyzer.IsValid():
+        return None
+
+    errors = []
+
+    shape_types = {
+        TopAbs_VERTEX: "Vertex",
+        TopAbs_EDGE: "Edge",
+        TopAbs_WIRE: "Wire",
+        TopAbs_FACE: "Face",
+        TopAbs_SHELL: "Shell",
+        TopAbs_SOLID: "Solid",
+        TopAbs_COMPOUND: "Compound",
+        TopAbs_COMPSOLID: "CompSolid"
+    }
+
+    def get_shape_info(s):
+        st_name = shape_types.get(s.ShapeType(), "Unknown")
+
+        # Get location/center to help identify which part failed
+        try:
+            bbox = Bnd_Box()
+            BRepBndLib.Add_s(s, bbox)
+            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+            cx = (xmin + xmax) / 2
+            cy = (ymin + ymax) / 2
+            cz = (zmin + zmax) / 2
+            loc_str = f"at ({cx:.2f}, {cy:.2f}, {cz:.2f})"
+        except:
+            loc_str = "location unknown"
+
+        return f"{st_name} {loc_str}"
+
+    # Iterate through all standard topological types
+    # We iterate over subshapes because BRepCheck_Analyzer results are typically attached to subshapes
+    for st in [TopAbs_VERTEX, TopAbs_EDGE, TopAbs_WIRE, TopAbs_FACE, TopAbs_SHELL, TopAbs_SOLID, TopAbs_COMPSOLID, TopAbs_COMPOUND]:
+        exp = TopExp_Explorer(shape, st)
+        while exp.More():
+            subshape = exp.Current()
+
+            # Check if this specific subshape is valid according to analyzer
+            if not analyzer.IsValid(subshape):
+                res = analyzer.Result(subshape)
+                if res:
+                    status_list = res.Status()
+                    status_strs = []
+                    # OCP list iteration
+                    try:
+                        for s in status_list:
+                             status_strs.append(s.name)
+                    except:
+                        pass # Should not happen if OCP is working correctly
+
+                    if status_strs:
+                        info = get_shape_info(subshape)
+                        errors.append(f"{info}: {', '.join(status_strs)}")
+            exp.Next()
+
+    if not errors:
+        return "Geometry is invalid (Topological validity check failed), but no specific subshape errors were identified by BRepCheck."
+
+    return "Geometry validation failed:\n" + "\n".join(errors)
+
 def validate_geometry(cq_obj):
     """
     Validate the generated geometry.
@@ -107,6 +183,21 @@ def validate_geometry(cq_obj):
         raise GeometryValidationError("Generated object value is empty")
 
     if not val.isValid():
+        # Enhanced error reporting
+        try:
+            # We access the wrapped OCP object directly
+            error_msg = check_geometry_errors(val.wrapped)
+            if error_msg:
+                 raise GeometryValidationError(error_msg)
+        except Exception as e:
+            # Fallback if detailed check fails or throws exception
+            if isinstance(e, GeometryValidationError):
+                raise e
+            # Log the exception that occurred during validation for debugging
+            # But we don't have logging setup here, so just include in error
+            raise GeometryValidationError(f"Generated geometry is invalid (Topological validity check failed). Detailed check failed: {e}")
+
+        # Fallback if check_geometry_errors returns None but isValid() was False
         raise GeometryValidationError("Generated geometry is invalid (Topological validity check failed)")
 
     shape_type = val.ShapeType()
