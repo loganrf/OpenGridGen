@@ -57,7 +57,7 @@ class Gear:
 
         theta_thick = (pi / (2 * z)) - angle_backlash
         inv_alpha = tan(phi) - phi
-        angle_offset = theta_thick - inv_alpha
+        angle_offset = theta_thick + inv_alpha
 
         def rotate_point(pt, ang):
             x, y = pt
@@ -67,7 +67,11 @@ class Gear:
 
         # Top flank (y > 0)
         # Rotate involute points by angle_offset
-        top_flank = [rotate_point(p, angle_offset) for p in points_inv]
+        # We need the flank that spirals CW (angle decreases) as radius increases.
+        # Standard involute spirals CCW (angle increases).
+        # So we use the mirrored involute: (x, -y).
+        points_inv_cw = [(x, -y) for x, y in points_inv]
+        top_flank = [rotate_point(p, angle_offset) for p in points_inv_cw]
 
         # Handle Undercut / Base circle > Root circle
         if r_base > r_dedendum:
