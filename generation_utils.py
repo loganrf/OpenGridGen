@@ -288,9 +288,16 @@ def generate_tube_adapter_task(params, settings, output_path=None, format=None):
         side_b_barb = params.get('side_b_barb', False)
         length = float(params.get('length', 30.0))
 
+        num_barbs = int(params.get('num_barbs', 3))
+        barb_height_percentage = float(params.get('barb_height_percentage', 10.0))
+        barb_width = float(params.get('barb_width', 2.0))
+
         adapter_obj = TubeAdapter(side_a_id=side_a_id, side_a_od=side_a_od, side_a_barb=side_a_barb,
                                   side_b_id=side_b_id, side_b_od=side_b_od, side_b_barb=side_b_barb,
-                                  length=length)
+                                  length=length,
+                                  num_barbs=num_barbs,
+                                  barb_height_percentage=barb_height_percentage,
+                                  barb_width=barb_width)
 
         cq_obj = adapter_obj.render()
         validate_geometry(cq_obj)
