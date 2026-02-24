@@ -43,16 +43,6 @@ class TubeAdapter:
         # Combine
         body = cyl_a.union(trans).union(cyl_b)
 
-        # Hole
-        # Lofted hole through entire length
-        hole_a = cq.Workplane("XY").circle(self.side_a_id/2).extrude(section_len)
-        hole_b = cq.Workplane("XY").workplane(offset=section_len + trans_len).circle(self.side_b_id/2).extrude(section_len)
-        hole_trans = cq.Workplane("XY").workplane(offset=section_len).circle(self.side_a_id/2).workplane(offset=trans_len).circle(self.side_b_id/2).loft()
-
-        full_hole = hole_a.union(hole_trans).union(hole_b)
-
-        adapter = body.cut(full_hole)
-
         # Barb Logic
         def add_barbs(obj, od, section_start_z, section_len, direction):
             barb_h = min(1.0, 0.1 * od)
@@ -85,10 +75,20 @@ class TubeAdapter:
             return obj
 
         if self.side_a_barb:
-            adapter = add_barbs(adapter, self.side_a_od, 0, section_len, 'A')
+            body = add_barbs(body, self.side_a_od, 0, section_len, 'A')
 
         if self.side_b_barb:
-            adapter = add_barbs(adapter, self.side_b_od, section_len + trans_len, section_len, 'B')
+            body = add_barbs(body, self.side_b_od, section_len + trans_len, section_len, 'B')
+
+        # Hole
+        # Lofted hole through entire length
+        hole_a = cq.Workplane("XY").circle(self.side_a_id/2).extrude(section_len)
+        hole_b = cq.Workplane("XY").workplane(offset=section_len + trans_len).circle(self.side_b_id/2).extrude(section_len)
+        hole_trans = cq.Workplane("XY").workplane(offset=section_len).circle(self.side_a_id/2).workplane(offset=trans_len).circle(self.side_b_id/2).loft()
+
+        full_hole = hole_a.union(hole_trans).union(hole_b)
+
+        adapter = body.cut(full_hole)
 
         self.cq_obj = adapter
         return self.cq_obj
